@@ -1,0 +1,1 @@
+# Detector-de-Tirada-de-Dados
