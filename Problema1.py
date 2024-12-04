@@ -3,7 +3,26 @@ import numpy as np
 import matplotlib.pyplot as plt
 import cv2
 
+def imshow(img, new_fig=True, title=None, color_img=False, blocking=True, colorbar=False, ticks=False):
+    """Definimos funcion para simplificar codigo de visualizaciones"""
+    if new_fig:
+        plt.figure()
+    if color_img:
+        plt.imshow(img)
+    else:
+        plt.imshow(img, cmap='gray')
+    plt.title(title)
+    if not ticks:
+        plt.xticks([]), plt.yticks([])
+    if colorbar:
+        plt.colorbar()
+    if new_fig:        
+        plt.show(block=blocking)
+
 def detectar_movimiento(video_path, umbral_movimiento=5000, escala=0.5):
+    """Funcion para detectar el momento en que los dados 
+    de un video dejan de moverse en un video.
+    """
     cap = cv2.VideoCapture(video_path)
     if not cap.isOpened():
         raise IOError("No se pudo abrir el video.")
@@ -39,6 +58,9 @@ def detectar_movimiento(video_path, umbral_movimiento=5000, escala=0.5):
     raise ValueError("No se detectó el cese de movimiento en el video.")
 
 def extraer_area_interes(frame):
+    """
+    Detecta el área de interés en un frame y, si los dados están quietos, identifica las caras visibles.
+    """
     frame_hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
     fondo = frame[30:200, 30:200]
     fondo_hsv = cv2.cvtColor(fondo, cv2.COLOR_BGR2HSV)
@@ -81,7 +103,9 @@ for i in range(1, 5):
     video_path = r'videos\tirada_' + str(i) + '.mp4'
     print("Procesando: tirada_" + str(i))
     frame_final = detectar_movimiento(video_path)
+    imshow(frame_final, title="Frame")
     mask = extraer_area_interes(frame_final)
+    imshow(mask, title="Mascara")
     dados = detectar_dados(mask, frame_final)
 
     for idx, dado in enumerate(dados):
