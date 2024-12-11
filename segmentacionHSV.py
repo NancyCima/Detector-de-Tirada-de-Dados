@@ -61,8 +61,7 @@ def subplot3(img1, img2, img3, share = False, t1 = "", t2 = "", t3 = ""):
         plt.subplot(133); imshow(img3, new_fig=False, title=t3)
         plt.show(block=False)
 
-
-def guarda_frames(n_tirada,detalles = False, view = False):
+def guarda_frames(n_tirada, detalles = False, view = False):
     """
     Recibe el numero de tirada de un video y guarda todos los frames
     del mismo en la carpeta frames.
@@ -72,7 +71,7 @@ def guarda_frames(n_tirada,detalles = False, view = False):
     # Creamos carpeta frames si no existe
     os.makedirs("frames", exist_ok = True)  
     # Capturamos el video en cuestion y calculamos
-    cap = cv2.VideoCapture("tirada_"+ str(n_tirada) + ".mp4")
+    cap = cv2.VideoCapture(r'inputs\tirada_' + str(n_tirada) + '.mp4')
     # Si se requiere mostramos detalles del video
     if detalles:
         width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))  
@@ -102,8 +101,24 @@ def guarda_frames(n_tirada,detalles = False, view = False):
     cap.release()
     print(frame_number, "Frames guardados exitosamente")
 
+def mask_y_mask_inv_segHSV(img, h_min = 65, h_max = 85, s_min = 100, s_max = 255, view = False):
+    """
+    Recibe una imagen de una mesa de dados y calcula la mascara binaria de aplicar
+    segmentacion de color verde y la mascara inversa de la misma
+    """
+    # Define a range for segmentation based on H and S values
+    lims_inf = np.array([h_min, s_min, 50])
+    lims_sup = np.array([h_max, s_max, 255])
+    # Convert the image to HSV and create a mask
+    hsv_image = cv2.cvtColor(img, cv2.COLOR_RGB2HSV)
+    # Creo la mascara y normalizo a imagen binaria con 0 y 1
+    mask = np.uint8(cv2.inRange(hsv_image, lims_inf, lims_sup) / 255)
+    mask_inv = 1 - mask
+    if view:
+        subplot3(img, mask, mask_inv, "Imagen original", "Mascara segmentacion color verde", "Mascara inversa segmentacion color verde")
+    return mask, mask_inv
 
-def mask_y_mask_inv_segHSV(img, h1_min = 65, h1_max = 85, s1_min = 100, s1_max = 255, h2_min = None, h2_max = None, s2_min = None, s2_max = None):
+def mask_y_mask_inv_segHSV2(img, h1_min = 65, h1_max = 85, s1_min = 100, s1_max = 255, h2_min = None, h2_max = None, s2_min = None, s2_max = None):
     """
     Recibe una imagen en formato RGB y calcula la mascara binaria de aplicar segmentacion de
     color especificado en formato HSV. Ademas devuelve la mascara inversa de la misma.
@@ -191,68 +206,69 @@ def segmentacion_dinamica(img):
     cv2.destroyAllWindows()
 
 
-# Guardamos los frames de la tirada de dados deseada
-n_tirada = 1
-guarda_frames(n_tirada, True, True)
-
-# Cargamos el frame que deseamos segmentar
-n_frame = 70 # Probar con frame 0, 20, 70, 100
-path = "frames/frame_" + str(n_frame) +".jpg"  
-img = cv2.imread(path)
-img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB) # Pasamos a formato RGB
-if img is None:
-    print("Error: imagen inexistente")
-    exit(1)
-imshow(img)
-
-# Segmentamos dinamicamente la image con la GUI interactiva
-segmentacion_dinamica(img)
-
-# A partir de la segmentacion dinamica anterior obtuvimos los siguientes umbrales:
-# Umbrales para color:
-
-# VERDE
-    # Hmin = 70
-    # Hmax = 85
-    # Smin = 100
-    # Smax = 255
-    # Vmin = 50
-    # Vmax = 255
-# Con la funcion queda:
-mask, mask_inv = mask_y_mask_inv_segHSV(img) # O especificando valores mask_y_mask_inv_segHSV(img, 65, 85, 100, 255)
-seg = cv2.bitwise_and(img, img, mask=mask)
-# Visualizamos el resultado
-subplot4(img,mask, mask_inv, seg,True, "Imagen original", "Mascara binaria color verde","Mascara binaria inversa color verde", "Segmentación")
-
-# ROJO
-    # H1min = 0
-    # H1max = 15
-    # S1min = 150
-    # S1max = 255
-    # H2min = 165
-    # H2max = 179
-    # S1min = 25
-    # S1max = 255
-    # Vmin  = 50
-    # Vmax  = 255
-
-# Con la funcion queda:
-mask, mask_inv = mask_y_mask_inv_segHSV(img, 0, 15, 150, 255, 165, 179, 25, 255)
-seg = cv2.bitwise_and(img, img, mask=mask)
-# Visualizamos el resultado
-subplot4(img,mask, mask_inv, seg,True, "Imagen original", "Mascara binaria color rojo","Mascara binaria inversa color rojo", "Segmentación")
 
 
-# MEJORAMIENTO DE MASCARA BINARIA DADOS. SACAR DE AQUI Y AGREGAR EN EL TP
-mask, mask_inv = mask_y_mask_inv_segHSV(img, 0, 15, 150, 255, 165, 179, 25, 255)
-subplot3(img,mask,mask_inv,True)
 
-kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5)) 
-dil = cv2.dilate(mask, kernel)
-seg = cv2.bitwise_and(img, img, mask=dil)
-subplot4(img,mask,dil,seg,True)
+if __name__ == "__main__":
+    # Guardamos los frames de la tirada de dados deseada
+    n_tirada = 1
+    guarda_frames(n_tirada, True, True)
+
+    # Cargamos el frame que deseamos segmentar
+    n_frame = 82 # Probar con frame 0, 20, 70, 100
+    path = "frames/frame_" + str(n_frame) +".jpg"  
+    img = cv2.imread(path)
+    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB) # Pasamos a formato RGB
+    if img is None:
+        print("Error: imagen inexistente")
+        exit(1)
+    imshow(img)
+
+    # Segmentamos dinamicamente la image con la GUI interactiva
+    segmentacion_dinamica(img)
+
+    # A partir de la segmentacion dinamica anterior obtuvimos los siguientes umbrales:
+    # Umbrales para color:
+
+    # VERDE
+        # Hmin = 70
+        # Hmax = 85
+        # Smin = 100
+        # Smax = 255
+        # Vmin = 50
+        # Vmax = 255
+    # Con la funcion queda:
+    mask, mask_inv = mask_y_mask_inv_segHSV(img) # O especificando valores mask_y_mask_inv_segHSV(img, 65, 85, 100, 255)
+    seg = cv2.bitwise_and(img, img, mask=mask)
+    # Visualizamos el resultado
+    subplot4(img,mask, mask_inv, seg,True, "Imagen original", "Mascara binaria color verde","Mascara binaria inversa color verde", "Segmentación")
+
+    # ROJO
+        # H1min = 0
+        # H1max = 15
+        # S1min = 150
+        # S1max = 255
+        # H2min = 165
+        # H2max = 179
+        # S1min = 25
+        # S1max = 255
+        # Vmin  = 50
+        # Vmax  = 255
+
+    # Con la funcion queda:
+    mask, mask_inv = mask_y_mask_inv_segHSV2(img, 0, 15, 150, 255, 165, 179, 25, 255)
+    seg = cv2.bitwise_and(img, img, mask=mask)
+    # Visualizamos el resultado
+    subplot4(img,mask, mask_inv, seg,True, "Imagen original", "Mascara binaria color rojo","Mascara binaria inversa color rojo", "Segmentación")
 
 
-connectivity = 8
-num_labels, labels, stats, centroids = cv2.connectedComponentsWithStats(dil, connectivity, cv2.CV_32S)
-cant_dados = num_labels - 1
+    # MEJORAMIENTO DE MASCARA BINARIA DADOS.
+    mask, mask_inv = mask_y_mask_inv_segHSV(img)
+    # subplot3(img,mask,mask_inv,True)
+    kernel1 = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5)) 
+    kernel2 = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (11, 11)) 
+    op = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel1)
+    dil = cv2.dilate(op, kernel2)
+    subplot3(img,op,dil)
+    seg = cv2.bitwise_and(img, img, mask=dil)
+    subplot4(img,mask,dil,seg,True)   
